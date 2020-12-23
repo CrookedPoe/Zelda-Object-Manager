@@ -6,9 +6,9 @@ A Command-Line application written in C# to manage and manipulate Zelda 64 objec
 This program features two main functions. This includes `export` and `reskin`.
 
 ## export
-*\* Currently Unsupported*
+*\* Currently Unsupported*  
 `export` has three sub-functions, or rather, three formats that you can export. This includes `obj`\*, `objex`\*, `c`\* and`zobj`.
-Here's an example for each that we can break down and review the arguments.
+Here's an example for each that we can break down and review the arguments:  
 
 ```
 ZeldaObjectManager.exe export obj
