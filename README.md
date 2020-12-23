@@ -1,5 +1,5 @@
 # Zelda Object Manager
-A Command-Line application written in C# to manage and manipulate Zelda 64 object files.
+A Command-Line application written in C# to manage and manipulate Zelda 64 object files. Do note that this is a Work in Progress and none of the following features are ready for deployment.
 ***
 # Let's review the arguments!
 
@@ -25,11 +25,13 @@ ZeldaObjectManager.exe export c
 ```
 ZeldaObjectManager.exe export zobj -m -e="file.cfg" -o="output.bin" -s06="input.zobj" 0x06021F78 -s06="input_2.zobj" 0x06013F38
 ```
-`-m` is an optinal argument that enables the output of a "map" of the final output file. This will be a text file named the same as your output file.
-`-e` is an optional argument where you can provide a configuration file (with a different specification) that will embed any sort of given data into the final output binary.
-`-o` is a required argument where you specify the directory and/or filename of your final output file.
-`-sXX` is a required argument where you specify and load a file into one of sixteen zero-indexed different segments. Note that the segments are in hexadecimal format, so segment `-s10` is unsupported, but `-s0A` is perfectly valid. Do note that if a display list references data that is not in a currently loaded segment, it will be ignored.
-`0xXXXXXXXX` every display list offset that occurs after loading a segment is pulled from the currently loaded segment. This means that if you load a different segment after a display list entry, it will pull from the next one instead.
+`-m` is an optinal argument that enables the output of a "map" of the final output file. This will be a text file named the same as your output file.  
+`-e` is an optional argument where you can provide a configuration file (with a different specification) that will embed any sort of given data into the final output binary.  
+`-o` is a required argument where you specify the directory and/or filename of your final output file.  
+`-sXX` is a required argument where you specify and load a file into one of sixteen zero-indexed different segments. Note that the segments are in hexadecimal format, so segment `-s10` is  unsupported, but `-s0A` is perfectly valid. Do note that if a display list references data that is not in a currently loaded segment, it will be ignored.  
+`0xXXXXXXXX` every display list offset that occurs after loading a segment is pulled from the currently loaded segment. This means that if you load a different segment after a display list  
+entry, it will pull from the next one instead.  
+
 
 ### Embed Configuration
 Embeddable files are simple. There are few symbols to remember. Here is an example of a valid configuration that covers the supported features.
