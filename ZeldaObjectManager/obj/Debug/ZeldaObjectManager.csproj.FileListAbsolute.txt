@@ -1,0 +1,7 @@
+C:\Users\Nick\source\repos\ZeldaObjectManager\ZeldaObjectManager\bin\Debug\ZeldaObjectManager.exe.config
+C:\Users\Nick\source\repos\ZeldaObjectManager\ZeldaObjectManager\bin\Debug\ZeldaObjectManager.exe
+C:\Users\Nick\source\repos\ZeldaObjectManager\ZeldaObjectManager\bin\Debug\ZeldaObjectManager.pdb
+C:\Users\Nick\source\repos\ZeldaObjectManager\ZeldaObjectManager\obj\Debug\ZeldaObjectManager.csprojAssemblyReference.cache
+C:\Users\Nick\source\repos\ZeldaObjectManager\ZeldaObjectManager\obj\Debug\ZeldaObjectManager.csproj.CoreCompileInputs.cache
+C:\Users\Nick\source\repos\ZeldaObjectManager\ZeldaObjectManager\obj\Debug\ZeldaObjectManager.exe
+C:\Users\Nick\source\repos\ZeldaObjectManager\ZeldaObjectManager\obj\Debug\ZeldaObjectManager.pdb
