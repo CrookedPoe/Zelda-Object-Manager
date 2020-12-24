@@ -1,5 +1,10 @@
 # Zelda Object Manager
 A Command-Line application written in C# to manage and manipulate Zelda 64 object files. Do note that this is a Work in Progress and none of the following features are ready for deployment.
+
+## Due Credits
+`gfxdis.f3dex2` originally by [glankk](https://github.com/glankk/n64/tree/master/src/gfxdis) and modified by me for use by this application.  
+`gfxasm.f3dex2` originally by [z64me](https://github.com/z64me/gfxasm) and modified by me for use by this application.  
+[DenOfLions](https://github.com/denoflionsx) for preliminary stress-testing.
 ***
 # Let's review the arguments!
 
