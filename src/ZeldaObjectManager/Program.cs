@@ -30,29 +30,35 @@ namespace ZeldaObjectManager
     }
     class Program
     {
+        public static string GfxAsmPath = String.Empty;
+        public static string GfxDisPath = String.Empty;
+        public static string[] Config = File.ReadAllLines("conf.ini");
         public static Stopwatch ExecuteTime = new Stopwatch();
-        //public static bool[] SegmentLoaded = new bool[16];
-        //public static List<byte[]> Segments = new List<byte[]>();
+        public static bool ExportMap = false;
         public static SegmentObject[] Segments = new SegmentObject[16];
         public static int OutputSegment = 0x06;
         static void Main(string[] args)
         {
-            /*SegmentLoaded[6] = true;
-            byte[] a = File.ReadAllBytes("../objects/adult-bank.zobj");
-            //DisplayList b = new DisplayList(a, 0x06018BC0);
-            List<DisplayList> b = DisplayList.OptimizeList(a, 0x060168E8, 0x06016E48, 0x06018BC0);
-
-            using (BinaryWriter f = new BinaryWriter(File.Create("out.zobj")))
+            // Parse Config File
+            for (int i = 0; i < Config.Length; i++)
             {
-                DisplayList.Export(f, b.ToArray());
+                if (Config[i].Contains("#"))
+                    continue;
+
+                if (Config[i].Contains("gfxdis"))
+                {
+                    GfxDisPath = Config[i].Split('=')[1];
+                    GfxDisPath = GfxDisPath.Replace("\"", String.Empty);
+                    GfxDisPath = GfxDisPath.Replace(";", String.Empty);
+                }
+
+                if (Config[i].Contains("gfxasm"))
+                {
+                    GfxAsmPath = Config[i].Split('=')[1];
+                    GfxAsmPath = GfxAsmPath.Replace("\"", String.Empty);
+                    GfxAsmPath = GfxAsmPath.Replace(";", String.Empty);
+                }
             }
-
-            Console.WriteLine("Done!");
-            Console.ReadKey();
-            Environment.Exit(0);
-
-            //* Purely for debugging.
-            args = new string[] { "export", "zobj", "-o=testcfg.out.txt", "-s06=../objects/adult-bank.zobj", "0x060168E8", "0x06016E48", "0x06018BC0" };*/
 
             // Initialize Segments
             for (int i = 0; i < Segments.Count(); i++)
@@ -61,9 +67,6 @@ namespace ZeldaObjectManager
             List<DisplayList> DisplayLists = new List<DisplayList>();
 
             string[] FilePath = new string[0];
-            /*for (int ap = 0; ap < args.Length; ap++)
-                Console.Write("{0} ", args[ap]);
-            Console.Write("\n");*/
 
             for (int ap = 0; ap < args.Length; ap++)
             {
@@ -84,12 +87,16 @@ namespace ZeldaObjectManager
                     else if (args[ap + 1].CommandOption("zobj"))
                     {
                         ExecuteTime.Start();
-                        //bool ExportMap = false;
                         //bool EmbedCfg = false;
                         string[] Output = new string[2];
                         int i = (ap + 1);
                         while (i < args.Length)
                         {
+                            if (args[i] == "-m")
+                            {
+                                ExportMap = true;
+                            }
+
                             if (args[i].Contains("-o"))
                             {
                                 FilePath = args[i].Split('=');
@@ -111,16 +118,16 @@ namespace ZeldaObjectManager
                             if (args[i].Contains("0x"))
                             {
                                 int seg = Convert.ToInt32(args[i].Substring(2, 2), 16);
-                                DisplayLists.Add(new DisplayList(Segments[seg].DataBlock, Convert.ToUInt32(args[i], 16)));
+                                DisplayLists.Add(new DisplayList(Convert.ToUInt32(args[i], 16)));
                             }
 
                             i++;
                         }
-                        for (int s = 0; s < Segments.Count(); s++)
+                        /*for (int s = 0; s < Segments.Count(); s++)
                         {
                             if (Segments[s].DataBlock.Length > 0)
                                 Console.WriteLine("Segment 0x{0:X2}: 0x{1:X8}", s, Segments[s].DataBlock.Length);
-                        }
+                        }*/
                         using (BinaryWriter f = new BinaryWriter(File.Create(Output[0])))
                         {
                             if (DisplayList.Export(f, DisplayLists.ToArray()) == 0)

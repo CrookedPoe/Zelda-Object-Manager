@@ -46,6 +46,7 @@
   <ItemGroup>
     <Compile Include="DisplayList.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="Gfx.cs" />
     <Compile Include="N64Graphics.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

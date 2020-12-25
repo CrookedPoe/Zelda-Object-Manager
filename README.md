@@ -32,7 +32,7 @@ ZeldaObjectManager.exe export zobj -m -e="file.cfg" -o="output.bin" -s06="input.
 ```
 `-m` is an optinal argument that enables the output of a "map" of the final output file. This will be a text file named the same as your output file.  
 `-e` is an optional argument where you can provide a configuration file (with a different specification) that will embed any sort of given data into the final output binary.  
-`-o[XX]` is a required argument where you specify the directory and/or filename of your final output file. There is an optional part so that if you specify a segment number with your output file, the output file will be allocated to that segment. By default it will write to segment `0x06`. 
+`-o[XX]` is a required argument where you specify the directory and/or filename of your final output file. There is an optional part so that if you specify a segment number with your output file, the output file will be allocated to that segment. By default it will write to segment `0x06`.  
 `-sXX` is a required argument where you specify and load a file into one of sixteen zero-indexed different segments. Note that the segments are in hexadecimal format, so segment `-s10` is  unsupported, but `-s0A` is perfectly valid. Do note that if a display list references data that is not in a currently loaded segment, it will be ignored.  
 `0xXXXXXXXX` every display list offset that occurs after loading a segment is pulled from the currently loaded segment. This means that if you load a different segment after a display list  
 entry, it will pull from the next one instead.  

@@ -7,679 +7,272 @@ using System.IO;
 
 namespace ZeldaObjectManager
 {
-    public enum BitSizes
-    {
-        ONEBPP = 1,
-        G_IM_SIZ_4b = 4,
-        G_IM_SIZ_8b = 8,
-        G_IM_SIZ_16b = 16,
-        G_IM_SIZ_32b = 32
-    }
-    class gsSPVertex
-    {
-        public GfxInstruction Input;
-        public string Instruction;
-        public int Segment;
-        public int Offset;
-        public int Vertices;
-        public byte[] DataBlock;
-
-        public gsSPVertex()
-        {
-            Instruction = "gsSPVertex";
-            Segment = 0;
-            Offset = 0;
-            Vertices = 0;
-            DataBlock = new byte[0];
-        }
-        public gsSPVertex(string i)
-        {
-            Input = new GfxInstruction(i);
-            Instruction = Input.Operation;
-            Segment = Convert.ToInt32(Input.Arguments[0].Substring(0, 4), 16);
-            Offset = Convert.ToInt32(Input.Arguments[0].Substring(4, 6), 16);
-            Vertices = Convert.ToInt32(Input.Arguments[1]);
-            DataBlock = new byte[0];
-        } 
-        public gsSPVertex(byte[] src, string i)
-        {
-            Input = new GfxInstruction(i);
-            Instruction = Input.Operation;
-            Segment = Convert.ToInt32(Input.Arguments[0].Substring(0, 4), 16);
-            Offset = Convert.ToInt32(Input.Arguments[0].Substring(4, 6), 16);
-            Vertices = Convert.ToInt32(Input.Arguments[1]);
-            DataBlock = Utility.ByteCopy(src, Offset, Vertices * 0x10);
-        }
-        public gsSPVertex(byte[] src, gsSPVertex v)
-        {
-            Input = v.Input;
-            Instruction = Input.Operation;
-            Segment = v.Segment;
-            Offset = v.Offset;
-            Vertices = v.Vertices;
-            DataBlock = Utility.ByteCopy(src, Offset, Vertices * 0x10);
-        }
-
-        public static string MakeInstruction(gsSPVertex t)
-        {
-            return String.Format("{0}(0x{1:X2}{2:X6}, {3}, {4})", t.Input.Operation, t.Segment, t.Offset, t.Vertices, t.Input.Arguments[2]);
-        }
-    }
-    class gsDPLoadTLUT
-    {
-        public GfxInstruction Input;
-        public string Instruction;
-        public int Segment;
-        public int Offset;
-        public int Colors;
-        public byte[] DataBlock;
-        public gsDPLoadTLUT()
-        {
-        }
-        public gsDPLoadTLUT(string i)
-        {
-            Input = new GfxInstruction(i);
-            Instruction = Input.Operation;
-            int alt = 0;
-            if (Instruction.Contains("_pal256"))
-            {
-                alt = 0;
-                Colors = 256;
-            }
-            else if (Instruction.Contains("_pal16"))
-            {
-                alt = 1;
-                Colors = 16;
-            }
-            else
-            {
-                Colors = Convert.ToInt32(Input.Arguments[0]);
-                alt = 3;
-            }
-            Segment = Convert.ToInt32(Input.Arguments[alt].Substring(0, 4), 16);
-            Offset = Convert.ToInt32(Input.Arguments[alt].Substring(4, 6), 16);
-            DataBlock = new byte[0];
-        }
-        public gsDPLoadTLUT(byte[] src, string i)
-        {
-            Input = new GfxInstruction(i);
-            Instruction = Input.Operation;
-            int alt = 0;
-            if (Instruction.Contains("_pal256"))
-            {
-                alt = 0;
-                Colors = 256;
-            }
-            else if (Instruction.Contains("_pal16"))
-            {
-                alt = 1;
-                Colors = 16;
-            }
-            else
-            {
-                Colors = Convert.ToInt32(Input.Arguments[0]);
-                alt = 3;
-            }
-            Segment = Convert.ToInt32(Input.Arguments[alt].Substring(0, 4), 16);
-            Offset = Convert.ToInt32(Input.Arguments[alt].Substring(4, 6), 16);
-            DataBlock = Utility.ByteCopy(src, Offset, Colors * 2);
-        }
-        public gsDPLoadTLUT(byte[] src, gsDPLoadTLUT p)
-        {
-            Input = p.Input;
-            Instruction = Input.Operation;
-            Segment = p.Segment;
-            Offset = p.Offset;
-            Colors = p.Colors;
-            DataBlock = Utility.ByteCopy(src, Offset, Colors * 2);
-        }
-
-        public static string MakeInstruction(gsDPLoadTLUT t)
-        {
-            if (t.Input.Operation.Contains("256"))
-            {
-                return String.Format("{0}(0x{1:X2}{2:X6})", t.Input.Operation, t.Segment, t.Offset);
-            }
-            else if (t.Input.Operation.Contains("16"))
-            {
-                return String.Format("{0}({3}, 0x{1:X2}{2:X6})", t.Input.Operation, t.Segment, t.Offset, t.Input.Arguments[0]);
-            }
-            else
-                return String.Format("{0}({3}, {4}, 0x{1:X2}{2:X6})", t.Input.Operation, t.Segment, t.Offset, t.Input.Arguments[0], t.Input.Arguments[1]);
-        }
-    }
-    class gsDPSetTextureImage
-    {
-        public GfxInstruction Input;
-        public string Instruction;
-        public int Segment;
-        public int Offset;
-        public string Format;
-        public int BitSize;
-        public N64Codec Codec;
-        public int BlockSize;
-
-        public gsDPSetTextureImage()
-        {
-        }
-        public gsDPSetTextureImage(string i)
-        {
-            Input = new GfxInstruction(i);
-            Instruction = Input.Operation;
-            Segment = Convert.ToInt32(Input.Arguments[3].Substring(0, 4), 16);
-            Offset = Convert.ToInt32(Input.Arguments[3].Substring(4, 6), 16);
-        }
-        public static string MakeInstruction(gsDPSetTextureImage t)
-        {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 1; i < t.Input.Arguments.Length; i++)
-            {
-                sb.Append(t.Input.Arguments[i]);
-                if (i < t.Input.Arguments.Length - 1)
-                    sb.Append(", ");
-            }
-
-            return String.Format("{0}({3}, 0x{1:X2}{2:X6})", t.Input.Operation, t.Segment, t.Offset, sb.ToString());
-        }
-    }
-    class gsDPLoadTextureBlock
-    {
-        public GfxInstruction Input;
-        public string Instruction;
-        public int Segment;
-        public int Offset;
-        public string Format;
-        public int BitSize;
-        public int Width;
-        public int Height;
-        public N64Codec Codec;
-        public gsDPLoadTLUT Palette;
-        public byte[] DataBlock;
-
-        public gsDPLoadTextureBlock()
-        {
-            DataBlock = new byte[0];
-        }
-        public gsDPLoadTextureBlock(string i)
-        {
-            Input = new GfxInstruction(i);
-            Instruction = Input.Operation;
-            int alt = Instruction.Contains("_4") ? 1 : 0;
-            Segment = Convert.ToInt32(Input.Arguments[0].Substring(0, 4), 16);
-            Offset = Convert.ToInt32(Input.Arguments[0].Substring(4, 6), 16);
-            Format = Input.Arguments[1];
-            BitSize = (alt == 1) ? 4 : (int)((BitSizes)Enum.Parse(typeof(BitSizes), Input.Arguments[2]));
-            Width = Convert.ToInt32(Input.Arguments[3 - alt]);
-            Height = Convert.ToInt32(Input.Arguments[4 - alt]);
-            Codec = ParseCodec(Format, BitSize);
-            Palette = new gsDPLoadTLUT();
-            DataBlock = new byte[0];
-        }
-        public gsDPLoadTextureBlock(byte[] src, string i)
-        {
-            Input = new GfxInstruction(i);
-            Instruction = Input.Operation;
-            int alt = Instruction.Contains("_4") ? 1 : 0;
-            Segment = Convert.ToInt32(Input.Arguments[0].Substring(0, 4), 16);
-            Offset = Convert.ToInt32(Input.Arguments[0].Substring(4, 6), 16);
-            Format = Input.Arguments[1];
-            BitSize = (alt == 1) ? 4 : (int)((BitSizes)Enum.Parse(typeof(BitSizes), Input.Arguments[2]));
-            Width = Convert.ToInt32(Input.Arguments[3 - alt]);
-            Height = Convert.ToInt32(Input.Arguments[4 - alt]);
-            Codec = ParseCodec(Format, BitSize);
-            Palette = new gsDPLoadTLUT();
-            DataBlock = Utility.ByteCopy(src, Offset, N64Graphics.PixelsToBytes(Codec, (Width * Height)));
-        }
-        public gsDPLoadTextureBlock(byte[] src, gsDPLoadTextureBlock t)
-        {
-            Input = t.Input;
-            Instruction = Input.Operation;
-            Segment = t.Segment;
-            Offset = t.Offset;
-            Format = t.Format;
-            BitSize = t.BitSize;
-            Width = t.Width;
-            Height = t.Height;
-            Codec = t.Codec;
-            Palette = t.Palette;
-            DataBlock = Utility.ByteCopy(src, Offset, N64Graphics.PixelsToBytes(Codec, (Width * Height)));
-        }
-        public gsDPLoadTextureBlock(byte[] src, gsDPSetTextureImage t)
-        {
-            Input = t.Input;
-            Instruction = Input.Operation;
-            Segment = t.Segment;
-            Offset = t.Offset;
-            Format = t.Format;
-            BitSize = t.BitSize;
-            //Width = t.Width;
-            //Height = t.Height;
-            Codec = t.Codec;
-            Palette = new gsDPLoadTLUT();
-            DataBlock = Utility.ByteCopy(src, Offset, t.BlockSize);
-        }
-        public gsDPLoadTextureBlock(byte[] src, gsDPLoadTLUT p, string i)
-        {
-            Input = new GfxInstruction(i);
-            Instruction = Input.Operation;
-            int alt = Instruction.Contains("_4") ? 1 : 0;
-            Segment = Convert.ToInt32(Input.Arguments[0].Substring(0, 4), 16);
-            Offset = Convert.ToInt32(Input.Arguments[0].Substring(4, 6), 16);
-            Format = Input.Arguments[1];
-            BitSize = (alt == 1) ? 4 : (int)((BitSizes)Enum.Parse(typeof(BitSizes), Input.Arguments[2]));
-            Width = Convert.ToInt32(Input.Arguments[3 - alt]);
-            Height = Convert.ToInt32(Input.Arguments[4 - alt]);
-            Codec = ParseCodec(Format, BitSize);
-            Palette = p;
-            DataBlock = Utility.ByteCopy(src, Offset, N64Graphics.PixelsToBytes(Codec, (Width * Height)));
-        }
-        public static N64Codec ParseCodec(string fmt, int siz)
-        {
-            string _Codec = String.Format("{0}!{1}", fmt, siz);
-            N64Codec codec = N64Codec.ONEBPP;
-
-            switch (_Codec)
-            {
-                case "G_IM_FMT_RGBA!16":
-                    codec = N64Codec.RGBA16;
-                    break;
-                case "G_IM_FMT_RGBA!32":
-                    codec = N64Codec.RGBA32;
-                    break;
-                case "G_IM_FMT_IA!16":
-                    codec = N64Codec.IA16;
-                    break;
-                case "G_IM_FMT_IA!8":
-                    codec = N64Codec.IA8;
-                    break;
-                case "G_IM_FMT_IA!4":
-                    codec = N64Codec.IA4;
-                    break;
-                case "G_IM_FMT_I!8":
-                    codec = N64Codec.I8;
-                    break;
-                case "G_IM_FMT_I!4":
-                    codec = N64Codec.I4;
-                    break;
-                case "G_IM_FMT_CI!8":
-                    codec = N64Codec.CI8;
-                    break;
-                case "G_IM_FMT_CI!4":
-                    codec = N64Codec.CI4;
-                    break;
-            }
-
-            return codec;
-        }
-        public static string MakeInstruction(gsDPLoadTextureBlock t)
-        {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 1; i < t.Input.Arguments.Length; i++)
-            {
-                sb.Append(t.Input.Arguments[i]);
-                if (i < t.Input.Arguments.Length - 1)
-                    sb.Append(", ");
-            }
-
-            return String.Format("{0}(0x{1:X2}{2:X6}, {3})", t.Input.Operation, t.Segment, t.Offset, sb.ToString());
-        }
-    }
-    class TextureCompare : IEqualityComparer<gsDPLoadTextureBlock>
-    {
-        public bool Equals(gsDPLoadTextureBlock a, gsDPLoadTextureBlock b)
-        {
-            return (a.DataBlock.SequenceEqual(b.DataBlock) && (a.Offset == b.Offset) && (a.Segment == b.Segment));
-        }
-
-        public int GetHashCode(gsDPLoadTextureBlock a)
-        {
-            return a.DataBlock.GetHashCode();
-        }
-    }
-    class PaletteCompare : IEqualityComparer<gsDPLoadTLUT>
-    {
-        public bool Equals(gsDPLoadTLUT a, gsDPLoadTLUT b)
-        {
-            return (a.DataBlock.SequenceEqual(b.DataBlock) && (a.Offset == b.Offset) && (a.Segment == b.Segment));
-        }
-
-        public int GetHashCode(gsDPLoadTLUT a)
-        {
-            return a.DataBlock.GetHashCode();
-        }
-    }
-    class GfxInstruction
-    {
-        public string Input;
-        public string Operation;
-        public string[] Arguments;
-
-        public GfxInstruction(string i)
-        {
-            Input = i;
-            int head = 0;
-            while (i[head] != '(')
-                head++;
-
-            Operation = Input.Substring(0, head);
-            Arguments = Input.Substring(head + 1, Input.Length - (head + 2)).Split(',');
-        }
-    }
     class DisplayList
     {
         public int Segment;
         public int Offset;
-        public List<GfxInstruction> Gfx;
-        public string[] GfxStr;
-        public List<gsSPVertex> VertexBlocks;
-        public List<gsDPLoadTextureBlock> Textures;
-        public List<gsDPLoadTLUT> Palettes;
-        public int Size;
-        public byte[] Raw;
+        public string[] String;
+
+        public List<Gbi.Instruction> Instructions;
+
+        // Geometry
+        public List<Gbi.gsSPVertex> VertexBuffers;
+        //public List<Gbi.Triangle> TriBuffers;
+        //public List<Gbi.Quadrangle> QuadBuffers;
+
+        // Textures
+        public List<Gbi.gsDPLoadTextureBlock> TextureBlocks;
+        public List<Gbi.gsDPLoadTLUT> Palettes;
 
         public DisplayList()
         {
+            Instructions = new List<Gbi.Instruction>();
         }
-
-        public DisplayList(byte[] src, UInt32 o)
+        public DisplayList(UInt32 o)
         {
-            // Find Display List Size
-            Segment = (int)(o & 0xFF000000) >> 24;
+            Instructions = new List<Gbi.Instruction>();
+            Segment = (int)(o >> 24) & 0xFF;
             Offset = (int)(o & 0x00FFFFFF);
-            for (int i = Offset; i < src.Length; i += 8)
+            String = Gfx.Disassemble(Program.Segments[Segment].FilePath, Offset).Split('!');
+            for (int i = 0; i < String.Length; i++)
             {
-                if (Utility.GfxDis(Utility.ByteCopy(src, i, 8)) == "gsSPEndDisplayList()")
-                {
-                    Size = ((i + 8) - Offset);
-                    break;
-                }
+                Instructions.Add(new Gbi.Instruction(String[i]));
             }
-            Raw = Utility.ByteCopy(src, Offset, Size);
+            VertexBuffers = GetVertexBuffers(this);
+            TextureBlocks = GetTextures(this);
 
-            Gfx = new List<GfxInstruction>();
-            GfxStr = Utility.GfxDis(Program.Segments[Segment].FilePath, Offset).Split('!');
-            for (int i = 0; i < GfxStr.Length; i++)
+            Palettes = new List<Gbi.gsDPLoadTLUT>();
+            for (int i = 0; i < TextureBlocks.Count(); i++)
             {
-                Gfx.Add(new GfxInstruction(GfxStr[i]));
+                if (TextureBlocks[i].Palette.Data.Block.Length > 0)
+                    Palettes.Add(TextureBlocks[i].Palette);
             }
-
-            VertexBlocks = GetVertexBlock(src, this);
-            Textures = GetTextures(src, this);
-            Palettes = GetPalettes(this.Textures);
         }
-
-        public static List<DisplayList> OptimizeList(byte[] src, params UInt32[] o)
+        public static List<Gbi.gsSPVertex> GetVertexBuffers(DisplayList dl)
         {
-            List<DisplayList> dls = new List<DisplayList>();
-
-            for (int i = 0; i < o.Count(); i++)
-                dls.Add(new DisplayList(src, o[i]));
-
-            return dls;
-        }
-        public static string[] MakeGfxStr(List<GfxInstruction> gfx)
-        {
-            StringBuilder sb = new StringBuilder();
-            string[] _g = new string[gfx.Count()];
-
-            for (int i = 0; i < gfx.Count(); i++)
+            List<Gbi.gsSPVertex> v = new List<Gbi.gsSPVertex>();
+            for (int i = 0; i < dl.Instructions.Count(); i++)
             {
-                sb.Clear();
-                for (int j = 0; j < gfx[i].Arguments.Length; j++)
-                {
-                    if (j > 0)
-                        sb.Append(", ");
-                    sb.Append(gfx[i].Arguments[j]);
-                }
-                _g[i] = String.Format("{0}({1});", gfx[i].Operation, sb.ToString());
+                if (dl.Instructions[i].Operation == "gsSPVertex")
+                    v.Add(new Gbi.gsSPVertex(dl.Instructions[i].ToString()));
             }
-
-            return _g;
-        }
-        public static List<gsSPVertex> GetVertexBlock(byte[] src, DisplayList dl)
-        {
-            List<gsSPVertex> v = new List<gsSPVertex>();
-
-            for (int i = 0; i < dl.Gfx.Count(); i++)
-            {
-                if (dl.Gfx[i].Operation == "gsSPVertex")
-                {
-                    gsSPVertex _v = new gsSPVertex(dl.Gfx[i].Input);
-
-                    if (Program.Segments[_v.Segment].Occupied == true)
-                    {
-                        v.Add(new gsSPVertex(Program.Segments[_v.Segment].DataBlock, _v));
-                    }
-                }
-            }
-
             return v;
         }
-        public static List<gsDPLoadTextureBlock> GetTextures(byte[] src, DisplayList dl)
+        public static List<Gbi.gsDPLoadTextureBlock> GetTextures(DisplayList dl)
         {
-            List<gsDPLoadTextureBlock> t = new List<gsDPLoadTextureBlock>();
-
-            for (int i = 0; i < dl.Gfx.Count(); i++)
+            List<Gbi.gsDPLoadTextureBlock> t = new List<Gbi.gsDPLoadTextureBlock>();
+            for (int i = 0; i < dl.Instructions.Count(); i++)
             {
-                gsDPLoadTextureBlock _t = new gsDPLoadTextureBlock();
-                if (dl.Gfx[i].Operation.Contains("gsDPLoadTextureBlock"))
-                {
-                    _t = new gsDPLoadTextureBlock(dl.Gfx[i].Input);
+                int _i = 0;
+                Gbi.gsDPLoadTextureBlock _t = new Gbi.gsDPLoadTextureBlock();
 
-                    if (Program.Segments[_t.Segment].Occupied == true)
+                // Texture Image
+                if (dl.Instructions[i].Operation.Contains("gsDPLoadTextureBlock"))
+                {
+                    _t = new Gbi.gsDPLoadTextureBlock(dl.Instructions[i].ToString());
+
+                    // Palette
+                    _i = i;
+                    if (_t.TileB.Format == "G_IM_FMT_CI")
                     {
-                        _t = new gsDPLoadTextureBlock(Program.Segments[_t.Segment].DataBlock, _t);
+                        while (!dl.Instructions[_i].Operation.Contains("gsDPLoadTLUT"))
+                            _i++;
+                        if (dl.Instructions[_i].Operation.Contains("gsDPLoadTLUT"))
+                            _t.Palette = new Gbi.gsDPLoadTLUT(dl.Instructions[_i].ToString());
                     }
-
                 }
-                else if (dl.Gfx[i].Operation == "gsDPSetTextureImage")
+                else if (dl.Instructions[i].Operation == "gsDPSetTextureImage")
                 {
-                    gsDPSetTextureImage _st = new gsDPSetTextureImage(dl.Gfx[i].Input);
-                    int st_pos = i;
-                    int _st_pos = i;
+                    _t.TextureImage = new Gbi.gsDPSetTextureImage(dl.Instructions[i].ToString());
 
-                    // SetTile Madness
-                    int st_i = 0;
-                    while (st_i < 2)
+                    int tile = 2;
+                    _i = i;
+                    while (tile > 0)
                     {
-                        while (dl.Gfx[st_pos].Operation != "gsDPSetTile" && (st_pos < dl.Gfx.Count() - 1))
-                            st_pos++;
-
-                        if (dl.Gfx[st_pos].Operation == "gsDPSetTile")
+                        _i++;
+                        if (dl.Instructions[_i].Operation == "gsDPLoadBlock")
                         {
-                            if (st_i < 1)
-                                st_pos++;
-                            st_i++;
+                            _t.LoadBlock = new Gbi.gsDPLoadBlock(dl.Instructions[_i].ToString());
+                            Gbi.Data.BlockCopy(_t.TextureImage.Data, _t.TextureImage.Data.Segment, _t.TextureImage.Data.Offset, N64Graphics.PixelsToBytes(_t.Codec, _t.LoadBlock.BlockSize));
+                        }
+
+                        if (dl.Instructions[_i].Operation == "gsDPSetTile")
+                        {
+                            if (--tile > 0)
+                                continue;
+                            else
+                            {
+                                _t.TileB = new Gbi.gsDPSetTile(dl.Instructions[_i].ToString());
+                                _t.Codec = Gbi.gsDPLoadTextureBlock.ParseCodec(_t.TileB.Format, _t.TileB.BitSize);
+                            }
                         }
                     }
 
-                    if (dl.Gfx[st_pos].Operation == "gsDPSetTile")
+                    // Palette
+                    _i = i;
+                    if (_t.TileB.Format == "G_IM_FMT_CI")
                     {
-                        _st.Format = dl.Gfx[st_pos].Arguments[0];
-                        _st.BitSize = (int)(BitSizes)Enum.Parse(typeof(BitSizes), dl.Gfx[st_pos].Arguments[1]);
-                        _st.Codec = gsDPLoadTextureBlock.ParseCodec(_st.Format, _st.BitSize);
-                    }
-
-                    // LoadBlock Madness
-                    while (dl.Gfx[_st_pos].Operation != "gsDPLoadBlock" && (_st_pos < dl.Gfx.Count() - 1))
-                        _st_pos++;
-
-                    if (dl.Gfx[_st_pos].Operation == "gsDPLoadBlock")
-                        _st.BlockSize = Convert.ToInt32(dl.Gfx[_st_pos].Arguments[3]) + 1;
-
-                    if (Program.Segments[_st.Segment].Occupied == true)
-                    {
-                        _t = new gsDPLoadTextureBlock(Program.Segments[_st.Segment].DataBlock, _st);
-                    }
-
-                }
-
-                // Palette
-                if (_t.Format == "G_IM_FMT_CI")
-                {
-                    int p = i;
-                    while (!dl.Gfx[p].Operation.Contains("gsDPLoadTLUT") && (p < dl.Gfx.Count() - 1))
-                        p++;
-
-                    if (dl.Gfx[p].Operation.Contains("gsDPLoadTLUT"))
-                    {
-                        gsDPLoadTLUT _p = new gsDPLoadTLUT(dl.Gfx[p].Input);
-
-                        if (Program.Segments[_p.Segment].Occupied == true)
-                        {
-                            _t.Palette = new gsDPLoadTLUT(Program.Segments[_p.Segment].DataBlock, _p);
-                        }
+                        while (!dl.Instructions[_i].Operation.Contains("gsDPLoadTLUT"))
+                            _i++;
+                        if (dl.Instructions[_i].Operation.Contains("gsDPLoadTLUT"))
+                            _t.Palette = new Gbi.gsDPLoadTLUT(dl.Instructions[_i].ToString());
                     }
                 }
 
-                if (_t.DataBlock.Length > 0)
+                if (_t.TextureImage.Data.Block.Length > 0)
                     t.Add(_t);
             }
-
-            if (t.Count() > 0)
-                t = t.Distinct(new TextureCompare()).ToList();
-
             return t;
         }
-        public static List<gsDPLoadTLUT> GetPalettes(List<gsDPLoadTextureBlock> t)
+        public static string[] Restring(DisplayList dl)
         {
-            List<gsDPLoadTLUT> p = new List<gsDPLoadTLUT>();
-
-            for (int i = 0; i < t.Count(); i++)
-            {
-                if (t[i].Palette.DataBlock != null)
-                    p.Add(t[i].Palette);
-            }
-
-            if (p.Count() > 0)
-                p = p.Distinct(new PaletteCompare()).ToList();
-
-            return p;
+            string[] c = new string[dl.Instructions.Count()];
+            for (int i = 0; i < dl.Instructions.Count(); i++)
+                c[i] = dl.Instructions[i].ToString();
+            return c;
         }
         public static int Export(BinaryWriter f, params DisplayList[] dls)
         {
-            List<gsDPLoadTextureBlock> t_all = new List<gsDPLoadTextureBlock>();
-            List<gsDPLoadTLUT> p_all = new List<gsDPLoadTLUT>();
+            int total = 0;
+            int t = 0;
+            int p = 0;
 
             // Collect Textures and Palettes
-            for (int i = 0; i < dls.Count(); i++)
+            List<Gbi.gsDPLoadTextureBlock> t_all = new List<Gbi.gsDPLoadTextureBlock>();
+            List<Gbi.gsDPLoadTLUT> p_all = new List<Gbi.gsDPLoadTLUT>();
+            List<string> t_hash = new List<string>();
+            List<string> p_hash = new List<string>();
+            List<string> map = new List<string>();
+            total = dls.Count();
+            while (total > 0)
             {
-                for (int j = 0; j < dls[i].Textures.Count(); j++) // Texture Data
-                    t_all.Add(dls[i].Textures[j]);
-                for (int j = 0; j < dls[i].Palettes.Count(); j++) // Palette Data
-                    p_all.Add(dls[i].Palettes[j]);
+                --total;
+                t = dls[total].TextureBlocks.Count();
+                p = dls[total].Palettes.Count();
+                if (t > 0)
+                    while (t > 0)
+                    {
+                        if (!t_hash.Contains(Utility.ByteMD5(dls[total].TextureBlocks[--t].TextureImage.Data.Block)))
+                        {
+                            t_all.Add(dls[total].TextureBlocks[t]);
+                            t_hash.Add(Utility.ByteMD5(dls[total].TextureBlocks[t].TextureImage.Data.Block));
+                        }
+                    }
+                if (p > 0)
+                    while (p > 0)
+                    {
+                        if (!p_hash.Contains(Utility.ByteMD5(dls[total].Palettes[--p].Data.Block)))
+                        {
+                            p_all.Add(dls[total].Palettes[p]);
+                            p_hash.Add(Utility.ByteMD5(dls[total].Palettes[p].Data.Block));
+                        }
+                    }
             }
 
             // Write Textures
-            if (t_all.Count > 0)
+            t = t_all.Count();
+            while (t > 0)
             {
-                t_all = t_all.Distinct(new TextureCompare()).ToList();
+                --t;
                 bool ltb = false;
                 dynamic _t;
-                for (int i = 0; i < t_all.Count(); i++)
-                {
-                    if (t_all[i].Input.Operation.Contains("gsDPLoadTextureBlock"))
-                    {
-                        ltb = true;
-                        _t = new gsDPLoadTextureBlock(t_all[i].Input.Input);
-                        _t.Segment = Program.OutputSegment;
-                        _t.Offset = (int)f.BaseStream.Position;
-                    }
-                    else
-                    {
-                        ltb = false;
-                        _t = new gsDPSetTextureImage(t_all[i].Input.Input);
-                        _t.Segment = Program.OutputSegment;
-                        _t.Offset = (int)f.BaseStream.Position;
-                    }
 
-                    // Modify Instruction Offsets
-                    for (int j = 0; j < dls.Count(); j++)
+                if (t_all[t].Instruction.Operation.Contains("gsDPLoadTextureBlock"))
+                {
+                    ltb = true;
+                    _t = new Gbi.gsDPLoadTextureBlock(t_all[t].Instruction.String);
+                    _t.TextureImage.Data.Segment = Program.OutputSegment;
+                    _t.TextureImage.Data.Offset = (int)f.BaseStream.Position;
+                }
+                else
+                {
+                    ltb = false;
+                    _t = new Gbi.gsDPSetTextureImage(t_all[t].TextureImage.Instruction.String);
+                    _t.Data.Segment = Program.OutputSegment;
+                    _t.Data.Offset = (int)f.BaseStream.Position;
+                }
+
+                // Modify Instruction Offsets
+                total = dls.Count();
+                while (total > 0)
+                {
+                    --total;
+                    for (int i = 0; i < dls[total].Instructions.Count(); i++)
                     {
-                        for (int k = 0; k < dls[j].Gfx.Count(); k++)
+                        if (dls[total].Instructions[i].String == t_all[t].Instruction.String)
                         {
-                            if (dls[j].Gfx[k].Input == t_all[i].Input.Input)
-                            {
-                                if (ltb)
-                                    dls[j].Gfx[k] = new GfxInstruction(gsDPLoadTextureBlock.MakeInstruction(_t));
-                                else
-                                    dls[j].Gfx[k] = new GfxInstruction(gsDPSetTextureImage.MakeInstruction(_t));
-                                Console.WriteLine("0x{2:X2}{0:X6} -> 0x{3:X2}{1:X6} (Texture)", t_all[i].Offset, _t.Offset, t_all[i].Segment, _t.Segment);
-                            }
+                            dls[total].Instructions[i] = new Gbi.Instruction(_t.ToString());
+                            map.Add(System.String.Format("0x{0:X2}{1:X6} -> 0x{2:X2}{3:X6} (Texture)", t_all[t].TextureImage.Data.Segment, t_all[t].TextureImage.Data.Offset, Program.OutputSegment, (int)f.BaseStream.Position));
+                        }
+
+                        if (dls[total].Instructions[i].String == t_all[t].TextureImage.Instruction.String)
+                        {
+                            dls[total].Instructions[i] = new Gbi.Instruction(_t.ToString());
+                            map.Add(System.String.Format("0x{0:X2}{1:X6} -> 0x{2:X2}{3:X6} (Texture)", t_all[t].TextureImage.Data.Segment, t_all[t].TextureImage.Data.Offset, Program.OutputSegment, (int)f.BaseStream.Position));
                         }
                     }
-
-                    // Write Data
-                    f.Write(t_all[i].DataBlock);
                 }
+                f.Write(t_all[t].TextureImage.Data.Block);
             }
 
-            // Write Palettes
-            if (p_all.Count > 0)
+            p = p_all.Count();
+            while (p > 0)
             {
-                p_all = p_all.Distinct(new PaletteCompare()).ToList();
-                for (int i = 0; i < p_all.Count(); i++)
-                {
-                    gsDPLoadTLUT _p = new gsDPLoadTLUT(p_all[i].Input.Input);
-                    _p.Segment = Program.OutputSegment;
-                    _p.Offset = (int)f.BaseStream.Position;
+                --p;
+                Gbi.gsDPLoadTLUT _p = new Gbi.gsDPLoadTLUT(p_all[p].Instruction.String);
+                _p.Data.Segment = Program.OutputSegment;
+                _p.Data.Offset = (int)f.BaseStream.Position;
 
-                    // Modify Instruction Offsets
-                    for (int j = 0; j < dls.Count(); j++)
+                // Modify Instruction Offsets
+                total = dls.Count();
+                while (total > 0)
+                {
+                    --total;
+                    for (int i = 0; i < dls[total].Instructions.Count(); i++)
                     {
-                        for (int k = 0; k < dls[j].Gfx.Count(); k++)
+                        if (dls[total].Instructions[i].String == p_all[p].Instruction.String)
                         {
-                            if (dls[j].Gfx[k].Input == p_all[i].Input.Input)
-                            {
-                                dls[j].Gfx[k] = new GfxInstruction(gsDPLoadTLUT.MakeInstruction(_p));
-                                Console.WriteLine("0x{2:X2}{0:X6} -> 0x{3:X2}{1:X6} (Palette)", p_all[i].Offset, _p.Offset, p_all[i].Segment, _p.Segment);
-                            }
+                            dls[total].Instructions[i] = new Gbi.Instruction(_p.ToString());
+                            map.Add(System.String.Format("0x{0:X2}{1:X6} -> 0x{2:X2}{3:X6} (Palette)", p_all[p].Data.Segment, p_all[p].Data.Offset, _p.Data.Segment, _p.Data.Offset));
                         }
                     }
-
-                    // Write Data
-                    f.Write(p_all[i].DataBlock);
                 }
+                f.Write(p_all[p].Data.Block);
             }
 
-            // Vertex Data and Display Lists
-            for (int i = 0; i < dls.Count(); i++)
+            // Write Vertex Data and Display Lists
+            total = dls.Count();
+            while (total > 0)
             {
-                // Vertex Data
-                for (int j = 0; j < dls[i].VertexBlocks.Count(); j++)
+                --total;
+                int v = dls[total].VertexBuffers.Count();
+
+                while (v > 0)
                 {
-                    gsSPVertex _v = new gsSPVertex(dls[i].VertexBlocks[j].Input.Input);
+                    --v;
+                    Gbi.gsSPVertex _v = new Gbi.gsSPVertex(dls[total].VertexBuffers[v].Instruction.String);
+                    _v.Data.Segment = Program.OutputSegment;
+                    _v.Data.Offset = (int)f.BaseStream.Position;
 
                     // Modify Instruction Offsets
-                    _v.Segment = Program.OutputSegment;
-                    _v.Offset = (int)f.BaseStream.Position;
-
-                    for (int k = 0; k < dls[i].Gfx.Count(); k++)
+                    for (int i = 0; i < dls[total].Instructions.Count(); i++)
                     {
-                        if (dls[i].Gfx[k].Input == dls[i].VertexBlocks[j].Input.Input)
+                        if (dls[total].Instructions[i].String == dls[total].VertexBuffers[v].Instruction.String)
                         {
-                            dls[i].Gfx[k] = new GfxInstruction(gsSPVertex.MakeInstruction(_v));
-                            Console.WriteLine("0x{2:X2}{0:X6} -> 0x{3:X2}{1:X6} (Vertex Data)", dls[i].VertexBlocks[j].Offset, _v.Offset, dls[i].VertexBlocks[j].Segment, _v.Segment);
-                            break;
+                            dls[total].Instructions[i] = new Gbi.Instruction(_v.ToString());
+                            map.Add(System.String.Format("0x{0:X2}{1:X6} -> 0x{2:X2}{3:X6} (Vertex Data)", dls[total].VertexBuffers[v].Data.Segment, dls[total].VertexBuffers[v].Data.Offset, _v.Data.Segment, _v.Data.Offset));
                         }
                     }
-                    // Write Data
-                    f.Write(dls[i].VertexBlocks[j].DataBlock);
+                    f.Write(dls[total].VertexBuffers[v].Data.Block);
                 }
 
-                // Display List
-                Console.WriteLine("0x{2:X2}{0:X6} -> 0x{3:X2}{1:X6} (Display List)", dls[i].Offset, (int)f.BaseStream.Position, dls[i].Segment, Program.OutputSegment);
-                dls[i].GfxStr = MakeGfxStr(dls[i].Gfx);
-                dls[i].Raw = Utility.GfxAsm(dls[i].GfxStr);
-                f.Write(dls[i].Raw);
+                map.Add(System.String.Format("0x{0:X2}{1:X6} -> 0x{2:X2}{3:X6} (Display List)", dls[total].Segment, dls[total].Offset, Program.OutputSegment, (int)f.BaseStream.Position));
+                f.Write(Gfx.Assemble(Restring(dls[total])));
             }
-
-            return 0;
+            map = map.Distinct().ToList();
+            if (Program.ExportMap)
+                foreach (string item in map) { Console.WriteLine(item); };
+            return 0; // Success
         }
-        public static int Export(StreamWriter f, params DisplayList[] dls)
-        {
-            return 0;
-        }
-
     }
 }
