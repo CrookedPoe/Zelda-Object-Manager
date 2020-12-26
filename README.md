@@ -50,6 +50,8 @@ Embeddable files are simple. There are few symbols to remember. Here is an examp
 var(DATANAME)="This is a string.";
 var(BYTESTRING)=0xDF00000000000000;
 
+# The ALIGN keyword is given an offset and the program will guarentee that embedded data never stops at an offset that isn't aligned to the one defined.
+ALIGN=0x8;
 # The START keyword is given a defined offset. If the offset is greater than 0x0, the file will be padded to that offset.
 START=0x0;
 header="This is a header to be embedded. This will go at the offset defined by the START keyword before any output data is written.";
