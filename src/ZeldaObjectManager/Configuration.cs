@@ -13,6 +13,24 @@ namespace ZeldaObjectManager
         private static string gfxasm = String.Empty;
         private string[] conf = File.ReadAllLines("conf.ini");
 
+        public class ZeldaObjectProperties
+        {
+            public Segment.Address OutputAddress { get; set; }
+            public bool ExportMap { get; set; }
+            public bool PadOutput { get; set; }
+            public string EmbedFile { get; set; }
+            public string OutputFile { get; set; }
+
+            public ZeldaObjectProperties()
+            {
+                OutputAddress = new Segment.Address(0x06000000);
+                ExportMap = false;
+                PadOutput = false;
+                EmbedFile = String.Empty;
+                OutputFile = String.Empty;
+            }
+        }
+
         public enum ErrorCode
         {
             NO_ARGS = 0,

@@ -3,7 +3,8 @@ A Command-Line application written in C# to manage and manipulate Zelda 64 objec
 
 ## Due Credits
 `gfxdis.f3dex2` originally by [glankk](https://github.com/glankk/n64/tree/master/src/gfxdis) and modified by me for use by this application.  
-`gfxasm.f3dex2` originally by [z64me](https://github.com/z64me/gfxasm) and modified by me for use by this application.  
+`gfxasm.f3dex2` originally by [z64me](https://github.com/z64me/gfxasm) and modified by me for use by this application.
+`N64Graphics.cs` as part of Texture64 by [queueRAM](https://github.com/queueRAM) makes handling textures a breeze.   
 [DenOfLions](https://github.com/denoflionsx) for preliminary stress-testing.
 ***
 # Let's review the arguments!
@@ -28,11 +29,11 @@ ZeldaObjectManager.exe export c
 ```
 
 ```
-ZeldaObjectManager.exe export zobj -m -e="file.cfg" -o="output.bin" -s06="input.zobj" 0x06021F78 -s06="input_2.zobj" 0x06013F38
+ZeldaObjectManager.exe export zobj -m -o="output.bin" -s06="input.zobj" 0x06021F78 -s06="input_2.zobj" 0x06013F38
 ```
 `-m` is an optinal argument that enables the output of a "map" of the final output file. This will be a text file named the same as your output file.  
-`-e` is an optional argument where you can provide a configuration file (with a different specification) that will embed any sort of given data into the final output binary.  
-`-o[XX]` is a required argument where you specify the directory and/or filename of your final output file. There is an optional part so that if you specify a segment number with your output file, the output file will be allocated to that segment. By default it will write to segment `0x06`.  
+`-e` is an optional argument where you can provide a configuration file (with a different specification) that will embed any sort of given data into the final output binary.\*  
+`-o[p][XX][XXXXXX]` is a required argument where you specify the directory and/or filename of your final output file. There is an optional part so that if you specify a segment number with your output file, the output file will be allocated to that segment. By default it will write to segment `0x06`. In addition, if you provide a full segment offset, the file will be written starting at the specified offset. If `p` is detected, the file will be padded to the start offset.
 `-sXX` is a required argument where you specify and load a file into one of sixteen zero-indexed different segments. Note that the segments are in hexadecimal format, so segment `-s10` is  unsupported, but `-s0A` is perfectly valid. Do note that if a display list references data that is not in a currently loaded segment, it will be ignored.  
 `0xXXXXXXXX` every display list offset that occurs after loading a segment is pulled from the currently loaded segment. This means that if you load a different segment after a display list  
 entry, it will pull from the next one instead.  
