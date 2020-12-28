@@ -102,7 +102,7 @@ namespace ZeldaObjectManager
             }
         }
 
-        static void Reskin()
+        /*static void Reskin()
         {
 
         }
@@ -110,7 +110,7 @@ namespace ZeldaObjectManager
         static void Viewer()
         {
 
-        }
+        }*/
 
         static void ShowUsage(Configuration.ErrorCode err)
         {

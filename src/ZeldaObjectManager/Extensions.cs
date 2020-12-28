@@ -57,6 +57,10 @@ namespace ZeldaObjectManager
         {
             return new gsSPVertex(i.ToString());
         }
+        public static gsSPMatrix ParseMatrix(this DisplayList.Instruction i)
+        {
+            return new gsSPMatrix(i.ToString());
+        }
         public static gsDPLoadTextureBlock ParseTextureBlock(this DisplayList.Instruction i)
         {
             return new gsDPLoadTextureBlock(i.ToString());

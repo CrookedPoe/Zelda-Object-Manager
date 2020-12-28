@@ -13,11 +13,13 @@ namespace ZeldaObjectManager
         public static string Disassemble(string file, int offset)
         {
             // Use gfxdis
-            ProcessStartInfo gfxdis = new ProcessStartInfo();
-            gfxdis.FileName = Program.Conf.GfxDisPath;
-            gfxdis.Arguments = String.Format("-a 0x{0:X8} \"{1}\"", offset, Path.GetFullPath(file));
-            gfxdis.UseShellExecute = false;
-            gfxdis.RedirectStandardOutput = true;
+            ProcessStartInfo gfxdis = new ProcessStartInfo
+            {
+                FileName = Program.Conf.GfxDisPath,
+                Arguments = String.Format("-a 0x{0:X8} \"{1}\"", offset, Path.GetFullPath(file)),
+                UseShellExecute = false,
+                RedirectStandardOutput = true
+            };
 
             using (Process process = Process.Start(gfxdis))
             {
@@ -35,11 +37,13 @@ namespace ZeldaObjectManager
                 sb.Append(input[d].ToString("X2"));
 
             // Use gfxdis
-            ProcessStartInfo gfxdis = new ProcessStartInfo();
-            gfxdis.FileName = Program.Conf.GfxDisPath;
-            gfxdis.Arguments = String.Format("-d {0}", sb.ToString());
-            gfxdis.UseShellExecute = false;
-            gfxdis.RedirectStandardOutput = true;
+            ProcessStartInfo gfxdis = new ProcessStartInfo
+            {
+                FileName = Program.Conf.GfxDisPath,
+                Arguments = String.Format("-d {0}", sb.ToString()),
+                UseShellExecute = false,
+                RedirectStandardOutput = true
+            };
 
             using (Process process = Process.Start(gfxdis))
             {
@@ -57,11 +61,13 @@ namespace ZeldaObjectManager
                 sb.Append(stdin[d]);
 
             // Use gfxdis
-            ProcessStartInfo gfxdis = new ProcessStartInfo();
-            gfxdis.FileName = Program.Conf.GfxDisPath;
-            gfxdis.Arguments = String.Format("-d {0}", sb.ToString());
-            gfxdis.UseShellExecute = false;
-            gfxdis.RedirectStandardOutput = true;
+            ProcessStartInfo gfxdis = new ProcessStartInfo
+            {
+                FileName = Program.Conf.GfxDisPath,
+                Arguments = String.Format("-d {0}", sb.ToString()),
+                UseShellExecute = false,
+                RedirectStandardOutput = true
+            };
 
             using (Process process = Process.Start(gfxdis))
             {
@@ -85,12 +91,14 @@ namespace ZeldaObjectManager
 
             // Execute gfxasm
             string[] stderr = new string[0];
-            ProcessStartInfo gfxasm = new ProcessStartInfo();
-            gfxasm.FileName = Program.Conf.GfxAsmPath;
-            gfxasm.Arguments = "temp.txt";
-            gfxasm.UseShellExecute = false;
-            gfxasm.RedirectStandardInput = true;
-            gfxasm.RedirectStandardError = true;
+            ProcessStartInfo gfxasm = new ProcessStartInfo
+            {
+                FileName = Program.Conf.GfxAsmPath,
+                Arguments = "temp.txt",
+                UseShellExecute = false,
+                RedirectStandardInput = true,
+                RedirectStandardError = true
+            };
 
             using (Process proc = Process.Start(gfxasm))
             {

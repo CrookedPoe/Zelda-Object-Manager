@@ -7,12 +7,24 @@ using System.IO;
 
 namespace ZeldaObjectManager
 {
+#pragma warning disable IDE1006 // Naming Styles
     public class gsSPVertex : DisplayList.Instruction
+#pragma warning restore IDE1006 // Naming Styles
     {
         public Segment.Address Address;
         public Data Data;
         public int Vertices;
         public int BufferIndex;
+
+        public class Vertex
+        {
+            private static readonly int size = 16;
+
+            public static int Size
+            {
+                get { return size; }
+            }
+        }
 
         public gsSPVertex()
         {
@@ -28,25 +40,68 @@ namespace ZeldaObjectManager
         public gsSPVertex(string str)
         {
             String = str;
-            Parse(String);
+            Parse();
             Address = new Segment.Address(Arguments[0]);
             Vertices = Convert.ToInt32(Arguments[1]);
-            Data = new Data(Segment.Buffer.BlockCopy(Address, Vertices * 0x10));
+            Data = new Data(Segment.Buffer.BlockCopy(Address, Vertices * Vertex.Size));
             BufferIndex = Convert.ToInt32(Arguments[2]);
         }
 
         public gsSPVertex(UInt64 b)
         {
             String = Gfx.Disassemble(String.Format("{0:X16}", b));
-            Parse(String);
+            Parse();
             Address = new Segment.Address((UInt32)(b & 0xFFFFFFFF));
             Vertices = (Int32)((b >> 44) & 0xFFF);
-            Data = new Data(Segment.Buffer.BlockCopy(Address, Vertices * 0x10));
+            Data = new Data(Segment.Buffer.BlockCopy(Address, Vertices * Vertex.Size));
             BufferIndex = 0;
         }
     }
+#pragma warning disable IDE1006 // Naming Styles
+    public class gsSPMatrix : DisplayList.Instruction
+#pragma warning restore IDE1006 // Naming Styles
+    {
+        public Segment.Address Address;
+        public Data Data;
 
+        public class Matrix
+        {
+            private static readonly int size = 64;
+
+            public static int Size
+            {
+                get { return size; }
+            }
+        }
+
+        public gsSPMatrix()
+        {
+            String = String.Empty;
+            Operation = String.Empty;
+            Arguments = new string[0];
+            Address = new Segment.Address();
+            Data = new Data();
+        }
+
+        public gsSPMatrix(string str)
+        {
+            String = str;
+            Parse();
+            Address = new Segment.Address(Arguments[0]);
+            Data = new Data(Segment.Buffer.BlockCopy(Address, Matrix.Size));
+        }
+
+        public gsSPMatrix(UInt64 b)
+        {
+            String = Gfx.Disassemble(String.Format("{0:X16}", b));
+            Parse();
+            Address = new Segment.Address((UInt32)(b & 0xFFFFFFFF));
+            Data = new Data(Segment.Buffer.BlockCopy(Address, Matrix.Size));
+        }
+    }
+#pragma warning disable IDE1006 // Naming Styles
     public class gsDPLoadTLUT : DisplayList.Instruction
+#pragma warning restore IDE1006 // Naming Styles
     {
         public Segment.Address Address;
         public Data Data;
@@ -65,7 +120,7 @@ namespace ZeldaObjectManager
         public gsDPLoadTLUT(string str)
         {
             String = str;
-            Parse(String);
+            Parse();
 
             switch(Operation)
             {
@@ -89,8 +144,9 @@ namespace ZeldaObjectManager
             Data = new Data(Segment.Buffer.BlockCopy(Address, Colors * 2));
         }
     }
-
+#pragma warning disable IDE1006 // Naming Styles
     public class gsDPLoadTextureBlock : DisplayList.Instruction
+#pragma warning restore IDE1006 // Naming Styles
     {
         public Segment.Address Address;
         public Data Data;
@@ -116,7 +172,7 @@ namespace ZeldaObjectManager
         public gsDPLoadTextureBlock(string str)
         {
             String = str;
-            Parse(String);
+            Parse();
             int alt = (Arguments.Length < 12) ? 1 : 0;
             Address = new Segment.Address(Arguments[0]);
             Format = Arguments[1];
@@ -170,6 +226,7 @@ namespace ZeldaObjectManager
         public Data Data;
         public List<Instruction> Instructions;
         public List<gsSPVertex> VertexBuffers;
+        public List<gsSPMatrix> Matrices;
         public List<Texture> Textures;
         public List<gsDPLoadTLUT> Palettes;
 
@@ -193,10 +250,10 @@ namespace ZeldaObjectManager
                 // Parse
                 Modified = false;
                 String = str;
-                Parse(String);
+                Parse();
             }
 
-            public void Parse(string str)
+            public void Parse()
             {
                 int head = 0;
                 while (String[head] != '(')
@@ -271,11 +328,12 @@ namespace ZeldaObjectManager
         }
         public DisplayList(UInt32 o)
         {
-            string[] temp = new string[0];
+            string[] temp;
             Address = new Segment.Address(o);
             Data = new Data();
             Instructions = new List<Instruction>();
             VertexBuffers = new List<gsSPVertex>();
+            Matrices = new List<gsSPMatrix>();
             Textures = new List<Texture>();
             Palettes = new List<gsDPLoadTLUT>();
 
@@ -284,59 +342,72 @@ namespace ZeldaObjectManager
             {
                 Instruction _i = new Instruction(temp[i]);
 
-                // Vertex Data
-                if (_i.Operation == "gsSPVertex")
-                    VertexBuffers.Add(_i.ParseVertexBuffer());
-
-                // Textures
-                Texture t = new Texture();
-                if (_i.Operation.Contains("gsDPLoadTextureBlock") || _i.Operation == "gsDPSetTextureImage")
+                switch (_i.Operation)
                 {
-                    int p = i;
-                    if (_i.Operation.Contains("gsDPLoadTextureBlock"))
-                        t.Image = _i.ParseTextureBlock();
-                    else // gsDPSetTextureImage
-                    {
-                        Instruction[] gLTB = new Instruction[7];
-                        gLTB[0] = new Instruction(temp[p + 0]);
-                        gLTB[1] = new Instruction(temp[p + 1]);
-                        gLTB[2] = new Instruction(temp[p + 2]);
-                        gLTB[3] = new Instruction(temp[p + 3]);
-                        gLTB[4] = new Instruction(temp[p + 4]);
-                        gLTB[5] = new Instruction(temp[p + 5]);
-                        gLTB[6] = new Instruction(temp[p + 6]);
-                        t.Image.Address = new Segment.Address(gLTB[0].Arguments[3]);
-                        t.Image.Format = gLTB[5].Arguments[0];
-                        t.Image.BitSize = gLTB[5].Arguments[1];
-                        t.Image.Codec = gsDPLoadTextureBlock.ParseCodec(t.Image.Format, t.Image.BitSize);
-                        if (gLTB[6].Operation == "gsDPSetTileSize")
+                    case "gsSPVertex":
+                        gsSPVertex v = _i.ParseVertexBuffer();
+                        if (v.Data.Bytes.Length > 0)
+                            VertexBuffers.Add(v);
+                        break;
+                    case "gsSPMatrix":
+                        gsSPMatrix m = _i.ParseMatrix();
+                        if (m.Data.Bytes.Length > 0)
+                            Matrices.Add(m);
+                        break;
+                    case "gsDPLoadTextureBlock":
+                    case "gsDPLoadTextureBlock_4b":
+                    case "gsDPSetTextureImage":
                         {
-                            string[] dim = gLTB[6].Arguments[3].Split('(', ')');
-                            t.Image.Width = Convert.ToInt32(dim[1]);
-                            dim = gLTB[6].Arguments[4].Split('(', ')');
-                            t.Image.Height = Convert.ToInt32(dim[1]);
-                            t.Image.Data = new Data(Segment.Buffer.BlockCopy(t.Image.Address, N64Graphics.PixelsToBytes(t.Image.Codec, t.Image.Width * t.Image.Height)));
-                        }
-                        else
-                            t.Image.Data = new Data(Segment.Buffer.BlockCopy(t.Image.Address, (Convert.ToInt32(gLTB[3].Arguments[3]) + 1) * 2));
-                    }
+                            Texture t = new Texture();
+                            int p = i;
+                            if (_i.Operation.Contains("gsDPLoadTextureBlock"))
+                                t.Image = _i.ParseTextureBlock();
+                            else // gsDPSetTextureImage
+                            {
+                                Instruction[] gLTB = new Instruction[7];
+                                gLTB[0] = new Instruction(temp[p + 0]);
+                                gLTB[1] = new Instruction(temp[p + 1]);
+                                gLTB[2] = new Instruction(temp[p + 2]);
+                                gLTB[3] = new Instruction(temp[p + 3]);
+                                gLTB[4] = new Instruction(temp[p + 4]);
+                                gLTB[5] = new Instruction(temp[p + 5]);
+                                gLTB[6] = new Instruction(temp[p + 6]);
+                                t.Image.Address = new Segment.Address(gLTB[0].Arguments[3]);
+                                t.Image.Format = gLTB[5].Arguments[0];
+                                t.Image.BitSize = gLTB[5].Arguments[1];
+                                t.Image.Codec = gsDPLoadTextureBlock.ParseCodec(t.Image.Format, t.Image.BitSize);
+                                if (gLTB[6].Operation == "gsDPSetTileSize")
+                                {
+                                    string[] dim = gLTB[6].Arguments[3].Split('(', ')');
+                                    t.Image.Width = Convert.ToInt32(dim[1]);
+                                    dim = gLTB[6].Arguments[4].Split('(', ')');
+                                    t.Image.Height = Convert.ToInt32(dim[1]);
+                                    t.Image.Data = new Data(Segment.Buffer.BlockCopy(t.Image.Address, N64Graphics.PixelsToBytes(t.Image.Codec, t.Image.Width * t.Image.Height)));
+                                }
+                                else
+                                    t.Image.Data = new Data(Segment.Buffer.BlockCopy(t.Image.Address, (Convert.ToInt32(gLTB[3].Arguments[3]) + 1) * 2));
+                            }
 
-                    if (t.Image.Format.Contains("CI"))
-                    {
-                        p = i;
-                        while (!temp[p].Contains("gsDPLoadTLUT") && (p < (temp.Length - 1)))
-                            p++;
+                            if (t.Image.Format.Contains("CI"))
+                            {
+                                p = i;
+                                while (!temp[p].Contains("gsDPLoadTLUT") && (p < (temp.Length - 1)))
+                                    p++;
 
-                        if (temp[p].Contains("gsDPLoadTLUT"))
-                        {
-                            t.Palette = new Instruction(temp[p]).ParseTLUT();
-                            Palettes.Add(t.Palette);
+                                if (temp[p].Contains("gsDPLoadTLUT"))
+                                {
+                                    t.Palette = new Instruction(temp[p]).ParseTLUT();
+                                    Palettes.Add(t.Palette);
+                                }
+                            }
+
+                            if (t.Image.Data.Bytes.Length > 0 && t.Palette.Data.Bytes.Length > 0)
+                                Textures.Add(new Texture(t.Image, t.Palette));
+                            else if (t.Image.Data.Bytes.Length > 0 && t.Palette.Data.Bytes.Length <= 0)
+                                Textures.Add(new Texture(t.Image));
                         }
-                    }
+                        break;
                 }
-
-                if (t.Image.Data.Bytes.Length > 0 || t.Palette.Data.Bytes.Length > 0)
-                    Textures.Add(new Texture(t.Image, t.Palette));
 
                 Instructions.Add(_i);
             }
@@ -358,14 +429,13 @@ namespace ZeldaObjectManager
         public static int Export(BinaryWriter f, params DisplayList[] dls)
         {
             int pass = 0;
-            int d = 0; // Display List Iterator
+            int d; // Display List Iterator
             int a = 0; // Asset Iterator
 
-            List<string> MapInfo = new List<string>();
             List<string> AssetHashTable = new List<string>();
             List<int> AssetWriteTable = new List<int>();
             List<int[]> AssetRef = new List<int[]>();
-            string[] AssetString = new string[] { "Texture", "Palette", "Vertex Data", "Display List" };
+            string[] AssetString = new string[] { "Texture", "Palette", "Matrix", "Vertex Data", "Display List" };
             int WriteOffset = 0;
 
             // Padding?
@@ -378,11 +448,22 @@ namespace ZeldaObjectManager
             }
 
             // Collect Assets
-            while (pass < 2)
+            while (pass < 3)
             {
                 for (d = 0; d < dls.Count(); d++)
                 {
-                    a = (pass > 0) ? dls[d].Palettes.Count() : dls[d].Textures.Count();
+                    switch(pass)
+                    {
+                        case 0:
+                            a = dls[d].Textures.Count();
+                            break;
+                        case 1:
+                            a = dls[d].Palettes.Count();
+                            break;
+                        case 2:
+                            a = dls[d].Matrices.Count();
+                            break;
+                    }
                     if (a > 0)
                     {
                         while (a > 0)
@@ -396,6 +477,9 @@ namespace ZeldaObjectManager
                                 case 1:
                                     Asset = dls[d].Palettes[--a];
                                     break;
+                                case 2:
+                                    Asset = dls[d].Matrices[--a];
+                                    break;
                             }
 
                             // If asset hash does not exist in the table:
@@ -405,7 +489,7 @@ namespace ZeldaObjectManager
                                 f.Write(Asset.Data.Bytes);
                                 AssetHashTable.Add(Asset.Data.MD5);
                             }
-                            AssetRef.Add(new int[] { Asset.Address.Index, Asset.Address.Offset, AssetHashTable.IndexOf(Asset.Data.MD5) });
+                            AssetRef.Add(new int[] { Asset.Address.Index, Asset.Address.Offset, AssetHashTable.IndexOf(Asset.Data.MD5), pass });
                         }
                     }
                 }
@@ -419,8 +503,6 @@ namespace ZeldaObjectManager
                 {
                     for (int i = 0; i < dls[d].Instructions.Count(); i++)
                     {
-                        int type = (dls[d].Instructions[i].Operation.Contains("gsDPLoadTLUT")) ? 1 : 0;
-
                         if (!dls[d].Instructions[i].Modified)
                         {
                             for (int arg = 0; arg < dls[d].Instructions[i].Arguments.Count(); arg++)
@@ -431,8 +513,7 @@ namespace ZeldaObjectManager
                                 if (dls[d].Instructions[i].Arguments[arg] == old_offset.ToString())
                                 {
                                     dls[d].Instructions[i].Arguments[arg] = new_offset.ToString();
-                                    //Console.WriteLine("{0} -> {1} ({2})", old_offset.ToString(), new_offset.ToString(), AssetString[type]);
-                                    MapInfo.Add(String.Format("{0} -> {1} ({2})", old_offset.ToString(), new_offset.ToString(), AssetString[type]));
+                                    Console.WriteLine("{0} -> {1} ({2})", old_offset.ToString(), new_offset.ToString(), AssetString[AssetRef[a][3]]);
                                     dls[d].Instructions[i].Modified = true;
                                 }
                             }
@@ -440,8 +521,10 @@ namespace ZeldaObjectManager
 
                         if (dls[d].Instructions[i].Modified)
                         {
-                            dls[d].Instructions[i] = new Instruction(dls[d].Instructions[i].ToString());
-                            dls[d].Instructions[i].Modified = true;
+                            dls[d].Instructions[i] = new Instruction(dls[d].Instructions[i].ToString())
+                            {
+                                Modified = true
+                            };
                         }
                     }
                 }
@@ -459,31 +542,13 @@ namespace ZeldaObjectManager
                             Instruction _v = new Instruction(dls[d].VertexBuffers[v].String);
                             _v.Arguments[0] = new Segment.Address(Program.ZOBJProperties.OutputAddress.Index, (int)f.BaseStream.Position + WriteOffset).ToString();
                             dls[d].Instructions[i] = new Instruction(_v.ToString());
-                            //Console.WriteLine("{0} -> {1} ({2})", dls[d].VertexBuffers[v].Address.ToString(), _v.Arguments[0], AssetString[2]);
-                            MapInfo.Add(String.Format("{0} -> {1} ({2})", dls[d].VertexBuffers[v].Address.ToString(), _v.Arguments[0], AssetString[2]));
+                            Console.WriteLine("{0} -> {1} ({2})", dls[d].VertexBuffers[v].Address.ToString(), _v.Arguments[0], AssetString[3]);
                         }
                     }
                     f.Write(dls[d].VertexBuffers[v].Data.Bytes);
                 }
-                //Console.WriteLine("{0} -> {1} ({2})", dls[d].Address.ToString(), new Segment.Address(Program.ZOBJProperties.OutputAddress.Index, (int)f.BaseStream.Position + WriteOffset).ToString(), AssetString[3]);
-                MapInfo.Add(String.Format("{0} -> {1} ({2})", dls[d].Address.ToString(), new Segment.Address(Program.ZOBJProperties.OutputAddress.Index, (int)f.BaseStream.Position + WriteOffset).ToString(), AssetString[3]));
+                Console.WriteLine("{0} -> {1} ({2})", dls[d].Address.ToString(), new Segment.Address(Program.ZOBJProperties.OutputAddress.Index, (int)f.BaseStream.Position + WriteOffset).ToString(), AssetString[4]);
                 f.Write(Gfx.Assemble(dls[d].ToString().Split('!')));
-            }
-
-            // Export Map
-            if (Program.ZOBJProperties.ExportMap)
-            {
-                if (MapInfo.Count() > 0)
-                {
-                    using (StreamWriter sw = new StreamWriter(File.Create(String.Format("{0}_map.txt", Path.GetFileNameWithoutExtension(Program.ZOBJProperties.OutputFile)))))
-                    {
-                        foreach (string l in MapInfo)
-                        {
-                            sw.WriteLine($"{l}");
-                            Console.WriteLine($"{l}");
-                        }
-                    }
-                }
             }
 
             return 0;

@@ -11,7 +11,7 @@ namespace ZeldaObjectManager
     {
         private static string gfxdis = String.Empty;
         private static string gfxasm = String.Empty;
-        private string[] conf = File.ReadAllLines("conf.ini");
+        private readonly string[] conf = File.ReadAllLines("conf.ini");
 
         public class ZeldaObjectProperties
         {
